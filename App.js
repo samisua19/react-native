@@ -1,56 +1,53 @@
-import { StatusBar } from 'expo-status-bar';
-import React, {useEffect} from 'react';
-import { Alert, Dimensions, StyleSheet, Text, View } from 'react-native';
-import * as Location from 'expo-location';
-import MapView, {Marker} from 'react-native-maps';// Markers es para configurar los marcadores en el mapa
-import Constants from 'expo-constants'; //Conocer que tipo de permisos tiene el usuario
-import { useState } from 'react';
+import React, {useEffect, useState} from 'react';
+import { Button, StyleSheet, Text, View } from 'react-native';
+import {Camera} from 'expo-camera';
 
 
 //Guardar en una constante, el ancho del dispositivo
 //const width = Dimensions.get('window').width
 
 export default function App() {
-  const [locacion, setLocacion] = useState({})
+  const [permisos, setPermisos] = useState(null)
+  const [tipo, setTipo] = useState(Camera.Constants.Type.back) // se asigna el tipo de camara, trasera o delantera
 
-  const buscaLocation = async () => {
-    //Solicitar los permisos de geolocalizacion
-    const {status} = await Location.requestPermissionsAsync()
-    if(status !== 'granted'){
-      return Alert.alert('No hay permisos')
-    }
-    //datos de geolocalizacion
-    const location = await Location.getCurrentPositionAsync({})
-    setLocacion(location)
+  const getPermisos = async () =>{
+    const {status} = await Camera.requestPermissionsAsync()
+    setPermisos(status == 'granted')//tiene permisos
+    
   }
 
   useEffect(()=>{
-    buscaLocation()
+    getPermisos()
   })
 
+  if(permisos === null){
+    return <View><Text>Esperando Permisos...</Text></View>
+  }
+
+  if(permisos === false){
+    return <View><Text>No dieron permisos</Text></View>
+  }
   return (
     <View style={styles.container}>
-      <MapView style = {styles.map}>
-
-        {
-        locacion.coords ? <Marker coordinate = {locacion.coords}
-        title = "titulo"
-        description = "descripcion del punto" /> : null
-      } 
-      </MapView>
+      <Camera style={styles.camera} type={tipo}>
+        <Button title = "Voltaer" onPress = {()=> {
+          const {front, back} = Camera.Constants.Type // tomar el tipo de camara que se ejecuta en estos momentos
+          const nTipo = tipo === back ? front : back // condicional qu determina el tipo de camara al que va a cambiar
+          setTipo(nTipo)}} />
+      </Camera>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  camera: {
+    height: 500,
+    width:500
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  map: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
-  }
 });
